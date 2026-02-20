@@ -116,3 +116,4 @@ Delete `.state/` to force fresh logins. Delete `config.yaml` to reset settings.
 | `requests-futures` | Concurrent order fetching |
 | `cloudscraper` | Bypasses Humble's CloudFlare protection |
 | `rich` | Terminal UI (panels, spinners, tables, colors) |
+| `qrcode` | QR code generation for Steam mobile app login |

@@ -52,7 +52,8 @@ jobs:
             --hidden-import fuzzywuzzy \
             --hidden-import Levenshtein \
             --hidden-import requests_futures \
-            --hidden-import rich
+            --hidden-import rich \
+            --hidden-import qrcode
           dist/smoke-test${{ matrix.os == 'windows-latest' && '.exe' || '' }}
         shell: bash
 

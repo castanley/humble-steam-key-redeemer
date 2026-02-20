@@ -22,6 +22,7 @@ a = Analysis(
         'Levenshtein',
         'requests_futures',
         'rich',
+        'qrcode',
     ],
     hookspath=[],
     hooksconfig={},

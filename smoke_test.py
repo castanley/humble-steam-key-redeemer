@@ -35,6 +35,14 @@ try:
 except Exception as e:
     errors.append(f"requests: {e}")
 
+try:
+    import qrcode
+    qr = qrcode.QRCode()
+    qr.add_data("test")
+    qr.make()
+except Exception as e:
+    errors.append(f"qrcode: {e}")
+
 if errors:
     for err in errors:
         print(f"FAIL: {err}", file=sys.stderr)
