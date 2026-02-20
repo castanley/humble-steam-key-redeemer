@@ -153,26 +153,21 @@ def _try_qr_login(session: requests.Session) -> requests.Session | None:
     print_info("Press [bold]Enter[/bold] to type credentials instead.")
     console.print()
 
-    # Poll for approval while watching for Enter key
-    import selectors
-    import threading
-
-    enter_pressed = threading.Event()
-
-    def _wait_for_enter():
-        try:
-            input()
-        except EOFError:
-            pass
-        enter_pressed.set()
-
-    input_thread = threading.Thread(target=_wait_for_enter, daemon=True)
-    input_thread.start()
+    # Poll for approval while watching for Enter key (non-blocking stdin)
+    def _stdin_has_data() -> bool:
+        """Check if Enter was pressed without blocking."""
+        if sys.platform == "win32":
+            import msvcrt
+            return msvcrt.kbhit()
+        import select
+        ready, _, _ = select.select([sys.stdin], [], [], 0)
+        return bool(ready)
 
     refresh_token = None
     with console.status("Waiting for QR scan…", spinner="dots"):
         for _ in range(90):  # ~3 minutes
-            if enter_pressed.is_set():
+            if _stdin_has_data():
+                sys.stdin.readline()  # consume the Enter
                 return None  # User wants manual login
 
             poll_resp = (
