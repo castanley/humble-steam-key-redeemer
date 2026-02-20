@@ -60,7 +60,7 @@ steam_api_key: YOUR_KEY_HERE
 ```
 Get one at https://steamcommunity.com/dev/apikey. You can also set `STEAM_API_KEY` as an environment variable.
 
-If no API key is configured, the tool will prompt you to enter one or skip. Without it, only already-revealed keys are redeemed (unrevealed keys are preserved as gift links since ownership can't be verified).
+If no API key is configured, the tool will prompt you to enter one or skip. Without it, you'll be asked whether to reveal and redeem all keys or only attempt already-revealed ones (preserving unrevealed keys as gift links).
 
 ## Usage
 
