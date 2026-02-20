@@ -98,17 +98,29 @@ def steam_login() -> requests.Session:
         ]
 
         if 3 in conf_types:
-            twofactor_code = Prompt.ask("[bold cyan]2FA code[/bold cyan]")
-            session.post(
-                f"{STEAM_API}/IAuthenticationService/UpdateAuthSessionWithSteamGuardCode/v1",
-                data={
-                    "client_id": client_id,
-                    "steamid": steam_id,
-                    "code": twofactor_code,
-                    "code_type": "3",
-                },
-                timeout=15,
-            )
+            if 4 in conf_types:
+                # Both code and push notification available
+                print_info(
+                    "Approve the login on your Steam app, "
+                    "or enter your 2FA code below."
+                )
+                twofactor_code = Prompt.ask(
+                    "[bold cyan]2FA code[/bold cyan] [dim](Enter to wait for app)[/dim]",
+                    default="",
+                )
+            else:
+                twofactor_code = Prompt.ask("[bold cyan]2FA code[/bold cyan]")
+            if twofactor_code:
+                session.post(
+                    f"{STEAM_API}/IAuthenticationService/UpdateAuthSessionWithSteamGuardCode/v1",
+                    data={
+                        "client_id": client_id,
+                        "steamid": steam_id,
+                        "code": twofactor_code,
+                        "code_type": "3",
+                    },
+                    timeout=15,
+                )
         elif 4 in conf_types:
             print_info("Confirm the login on your Steam mobile app…")
         elif 2 in conf_types:
