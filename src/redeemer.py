@@ -21,6 +21,7 @@ from src.utils import (
     print_rule,
     print_success,
     print_warning,
+    prompt_yes_no,
     valid_steam_key,
     write_skipped,
 )
@@ -192,15 +193,36 @@ def redeem_steam_keys(humble_session, humble_keys: list[dict]) -> None:
         if skipped_games:
             write_skipped(skipped_games)
     else:
-        # No ownership data — only attempt already-revealed keys to protect gift links
-        unowned_games = [k for k in humble_keys if "redeemed_key_val" in k]
-        skipped_unrevealed = len(humble_keys) - len(unowned_games)
-        if skipped_unrevealed:
+        # No ownership data — warn and let user decide
+        revealed = [k for k in humble_keys if "redeemed_key_val" in k]
+        unrevealed_count = len(humble_keys) - len(revealed)
+
+        if unrevealed_count:
             print_warning(
-                f"Skipping {skipped_unrevealed} unrevealed keys "
-                f"(no API key — can't verify ownership, preserving gift links)."
+                f"No API key — can't check which games you already own."
             )
-        print_info(f"{len(unowned_games)} revealed keys will be attempted.")
+            print_warning(
+                f"If an unrevealed key gets revealed for a game you already own, "
+                f"you lose the ability to gift it."
+            )
+            console.print()
+            redeem_all = prompt_yes_no(
+                f"Reveal and redeem all {len(humble_keys)} keys "
+                f"({unrevealed_count} unrevealed)?",
+                default=False,
+            )
+            if redeem_all:
+                unowned_games = list(humble_keys)
+                print_info(f"All {len(unowned_games)} keys will be attempted.")
+            else:
+                unowned_games = revealed
+                print_info(
+                    f"{len(unowned_games)} already-revealed keys will be attempted, "
+                    f"{unrevealed_count} unrevealed keys preserved."
+                )
+        else:
+            unowned_games = revealed
+            print_info(f"{len(unowned_games)} revealed keys will be attempted.")
 
     seen: set = set()
     total = len(unowned_games)
