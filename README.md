@@ -30,7 +30,7 @@ Both Humble and Steam sessions are saved to `.state/` so you only need to log in
 
 When signing into Steam, the tool first tries QR code login:
 
-```
+```txt
     █▀▀▀▀▀▀▀█ ▄▀█▀▄ █▀▀▀▀▀▀▀█
     █ █▀▀▀█ █ █▄ ▄█ █ █▀▀▀█ █
     █ █   █ █  ▀█▀  █ █   █ █
@@ -50,15 +50,27 @@ If you skip the QR code and use credentials with 2FA enabled, the tool shows a c
 
 ## Setup
 
+### Using [uv](https://docs.astral.sh/uv/) (uv is a modern python package manager, this command will start running in TUI mode)
+
+```bash
+uv run humble-steam-redeem
+```
+
+### Using pip
+
 ```bash
 pip install -r requirements.txt
 ```
 
+### Configuration
+
 For ownership detection (recommended), add your Steam Web API key to `config.yaml`:
+
 ```yaml
 steam_api_key: YOUR_KEY_HERE
 ```
-Get one at https://steamcommunity.com/dev/apikey. You can also set `STEAM_API_KEY` as an environment variable.
+
+Get one at <https://steamcommunity.com/dev/apikey>. You can also set `STEAM_API_KEY` as an environment variable.
 
 If no API key is configured, the tool will prompt you to enter one or skip. Without it, you'll be asked whether to reveal and redeem all keys or only attempt already-revealed ones (preserving unrevealed keys as gift links).
 
@@ -71,6 +83,7 @@ steam-redeemer --help       # Show all flags
 ```
 
 Or from source:
+
 ```bash
 python steam_redeem.py
 python -m src
@@ -97,6 +110,7 @@ steam-redeemer --auto
 ```
 
 In `--auto` mode the tool:
+
 - Reuses saved sessions from `.state/` — no login prompts
 - Skips the mode menu and goes straight to auto-redeem
 - Skips unrevealed keys by default (preserving gift links)
@@ -107,7 +121,8 @@ If sessions expire, just run interactively once to refresh them.
 #### Cron example
 
 Redeem new keys every 6 hours:
-```
+
+```sh
 0 */6 * * * /path/to/steam-redeemer --auto >> /path/to/redeem.log 2>&1
 ```
 
@@ -161,7 +176,7 @@ These files are also used to filter keys on subsequent runs so you don't re-atte
 
 ## File Structure
 
-```
+```sh
 config.yaml          # Steam API key and settings
 .state/
   humble.cookies     # Humble Bundle session
