@@ -102,13 +102,12 @@ def main(argv: list[str] | None = None) -> None:
     original_length = len(steam_keys)
     for filter_file in filters:
         try:
-            with open(filter_file, "r") as f:
-                keycols = f.read()
-            filtered_keys = [
-                keycol for keycol in keycols.replace("\n", ",").split(",")
-            ]
+            with open(filter_file, "r", encoding="utf-8-sig") as f:
+                rows = [line.strip().split(",") for line in f if line.strip()]
+            seen_steam_keys = {row[2] for row in rows if len(row) >= 3 and row[2]}
             steam_keys = [
-                key for key in steam_keys if key["gamekey"] not in filtered_keys
+                key for key in steam_keys
+                if key.get("redeemed_key_val", "") not in seen_steam_keys
             ]
         except Exception:
             pass
