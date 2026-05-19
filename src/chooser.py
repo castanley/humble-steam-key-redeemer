@@ -8,10 +8,8 @@ from typing import Any
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
 from InquirerPy.prompts.checkbox import CheckboxPrompt
-from rich import box
 from rich.markup import escape
 from rich.prompt import Prompt
-from rich.table import Table
 
 from src.humble_api import (
     HUMBLE_CHOOSE_CONTENT,
@@ -107,39 +105,6 @@ def humble_chooser_mode(
                 f"{month_name}  ·  [cyan]{remaining}[/cyan] choices remaining"
             )
 
-            # Build game listing table
-            table = Table(
-                show_header=True,
-                header_style="bold cyan",
-                border_style="bright_blue",
-                box=box.ROUNDED,
-                padding=(0, 1),
-            )
-            table.add_column("#", style="cyan", justify="right", width=4)
-            table.add_column("Title", style="bold")
-            table.add_column("Rating", style="green")
-            table.add_column("Notes", style="yellow")
-
-            for idx, choice in enumerate(choices):
-                title = escape(choice["title"])
-                rating_text = ""
-                if (
-                    "review_text" in choice.get("user_rating", {})
-                    and "steam_percent|decimal" in choice.get("user_rating", {})
-                ):
-                    rating = choice["user_rating"]["review_text"].replace("_", " ")
-                    percentage = (
-                        str(int(choice["user_rating"]["steam_percent|decimal"] * 100))
-                        + "%"
-                    )
-                    rating_text = f"{rating} ({percentage})"
-                note = ""
-                if "tpkds" not in choice:
-                    note = "Must redeem via Humble"
-                table.add_row(str(idx + 1), title, rating_text, note)
-
-            console.print(table)
-
             if redeem_all is None and remaining == len(choices):
                 redeem_all = prompt_yes_no("Redeem all?")
             else:
@@ -150,28 +115,25 @@ def humble_chooser_mode(
             else:
                 console.print()
                 console.print(
-                    "[dim]Space toggles, Enter confirms. "
-                    "Leave empty for more options (browser / skip).[/dim]"
+                    "[dim]Submit empty for more options (browser / skip).[/dim]"
                 )
                 console.print()
 
+                def _label(choice: dict[str, Any]) -> str:
+                    parts = [choice["title"]]
+                    rating = choice.get("user_rating") or {}
+                    review = rating.get("review_text")
+                    pct = rating.get("steam_percent|decimal")
+                    if review and pct is not None:
+                        parts.append(f"  — {review.replace('_', ' ')} ({int(pct * 100)}%)")
+                    elif review:
+                        parts.append(f"  — {review.replace('_', ' ')}")
+                    if "tpkds" not in choice:
+                        parts.append("  [must redeem via Humble]")
+                    return "".join(parts)
+
                 checkbox_choices = [
-                    Choice(
-                        value=idx,
-                        name=(
-                            f"{choice['title']}"
-                            + (
-                                f"  ({choice['user_rating']['review_text'].replace('_', ' ')})"
-                                if "review_text" in choice.get("user_rating", {})
-                                else ""
-                            )
-                            + (
-                                "  [must redeem via Humble]"
-                                if "tpkds" not in choice
-                                else ""
-                            )
-                        ),
-                    )
+                    Choice(value=idx, name=_label(choice))
                     for idx, choice in enumerate(choices)
                 ]
 
