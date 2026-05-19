@@ -107,7 +107,7 @@ def humble_chooser_mode(
         redeem_all = None
         if first:
             redeem_keys = prompt_yes_no(
-                "Auto-redeem keys after choosing? (requires Steam login)"
+                "After all months are chosen, sign into Steam and redeem the keys?"
             )
             first = False
 
