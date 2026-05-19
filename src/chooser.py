@@ -5,8 +5,25 @@ from __future__ import annotations
 import webbrowser
 from typing import Any
 
-from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
+from InquirerPy.prompts.checkbox import CheckboxPrompt
+from InquirerPy import inquirer
+
+
+class _CountingCheckbox(CheckboxPrompt):
+    """CheckboxPrompt that shows live `(N/MAX selected)` in the instruction line."""
+
+    def __init__(self, *args: Any, max_selected: int, **kwargs: Any) -> None:
+        self._max_selected = max_selected
+        super().__init__(*args, **kwargs)
+
+    @property
+    def instruction(self) -> str:
+        try:
+            n = len(self.selected_choices)
+        except Exception:
+            n = 0
+        return f"({n}/{self._max_selected} selected, space=toggle, enter=confirm)"
 from rich import box
 from rich.markup import escape
 from rich.prompt import Prompt
@@ -159,10 +176,10 @@ def humble_chooser_mode(
                 ]
 
                 try:
-                    selected_indexes = inquirer.checkbox(
+                    selected_indexes = _CountingCheckbox(
                         message=f"Pick up to {remaining} for {month['product']['human_name']}:",
                         choices=checkbox_choices,
-                        instruction="(space=toggle, enter=confirm)",
+                        max_selected=remaining,
                         transformer=lambda result: f"{len(result)} selected",
                         validate=lambda result: len(result) <= remaining,
                         invalid_message=f"Pick at most {remaining}",
