@@ -42,7 +42,9 @@ def choose_games(
     for choice in chosen:
         display_name = choice["display_item_machine_name"]
         if "tpkds" not in choice:
-            webbrowser.open(f"{HUMBLE_SUB_PAGE}{choice_month_name}/{display_name}")
+            url = f"{HUMBLE_SUB_PAGE}{choice_month_name}/{display_name}"
+            console.print(f"[cyan]Open in browser:[/cyan] {url}")
+            webbrowser.open(url)
         else:
             payload = {
                 "gamekey": choice["tpkds"][0]["gamekey"],
@@ -157,7 +159,9 @@ def humble_chooser_mode(
             if len(user_input) == 0:
                 ready = True
             elif user_input[0].lower() == "link":
-                webbrowser.open(HUMBLE_SUB_PAGE + month["product"]["choice_url"])
+                url = HUMBLE_SUB_PAGE + month["product"]["choice_url"]
+                console.print(f"[cyan]Open in browser:[/cyan] {url}")
+                webbrowser.open(url)
                 if redeem_keys:
                     try_redeem_keys.append(month["gamekey"])
             else:
