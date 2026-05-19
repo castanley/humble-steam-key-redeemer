@@ -5,7 +5,8 @@ from __future__ import annotations
 import webbrowser
 from typing import Any
 
-import questionary
+from InquirerPy import inquirer
+from InquirerPy.base.control import Choice
 from rich import box
 from rich.markup import escape
 from rich.prompt import Prompt
@@ -138,8 +139,9 @@ def humble_chooser_mode(
                 console.print()
 
                 checkbox_choices = [
-                    questionary.Choice(
-                        title=(
+                    Choice(
+                        value=idx,
+                        name=(
                             f"{choice['title']}"
                             + (
                                 f"  ({choice['user_rating']['review_text'].replace('_', ' ')})"
@@ -152,37 +154,34 @@ def humble_chooser_mode(
                                 else ""
                             )
                         ),
-                        value=idx,
                     )
                     for idx, choice in enumerate(choices)
                 ]
 
-                def _validate(selected: list[int]) -> bool | str:
-                    if len(selected) > remaining:
-                        return f"Pick at most {remaining}"
-                    return True
-
-                selected_indexes = questionary.checkbox(
-                    f"Pick up to {remaining} game(s) for {month['product']['human_name']}:",
-                    choices=checkbox_choices,
-                    validate=_validate,
-                ).ask()
-
-                if selected_indexes is None:  # user pressed Ctrl-C
+                try:
+                    selected_indexes = inquirer.checkbox(
+                        message=f"Pick up to {remaining} for {month['product']['human_name']}:",
+                        choices=checkbox_choices,
+                        instruction="(space=toggle, enter=confirm)",
+                        transformer=lambda result: f"{len(result)} selected",
+                        validate=lambda result: len(result) <= remaining,
+                        invalid_message=f"Pick at most {remaining}",
+                    ).execute()
+                except KeyboardInterrupt:
                     ready = True
                     break
 
                 if not selected_indexes:
-                    next_action = questionary.select(
-                        "No games selected. What now?",
+                    next_action = inquirer.select(
+                        message="No games selected. What now?",
                         choices=[
                             "Skip this month",
                             "Open this month in browser",
                             "Re-pick",
                         ],
-                    ).ask()
+                    ).execute()
 
-                    if next_action is None or next_action == "Skip this month":
+                    if next_action == "Skip this month":
                         ready = True
                         continue
                     if next_action == "Open this month in browser":

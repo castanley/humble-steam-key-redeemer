@@ -6,4 +6,4 @@ requests-futures>=1.0.0
 cloudscraper>=1.2.71
 rich>=13.0
 qrcode>=7.0
-questionary>=2.0
+InquirerPy>=0.3
