@@ -162,6 +162,10 @@ def humble_chooser_mode(
                 url = HUMBLE_SUB_PAGE + month["product"]["choice_url"]
                 console.print(f"[cyan]Open in browser:[/cyan] {url}")
                 webbrowser.open(url)
+                Prompt.ask(
+                    "[dim]Press Enter once you've made your picks in the browser[/dim]",
+                    default="",
+                )
                 if redeem_keys:
                     try_redeem_keys.append(month["gamekey"])
             else:
