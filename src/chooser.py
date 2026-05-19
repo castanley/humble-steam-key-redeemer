@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 import webbrowser
 from typing import Any
 
@@ -52,8 +53,9 @@ def choose_games(
     choice_month_name: str,
     identifier: str,
     chosen: list[dict[str, Any]],
-) -> None:
-    """Submit chosen games for a Humble Choice month."""
+) -> list[str]:
+    """Submit chosen games for a Humble Choice month. Returns list of failed titles."""
+    failed: list[str] = []
     for choice in chosen:
         display_name = choice["display_item_machine_name"]
         if "tpkds" not in choice:
@@ -67,14 +69,29 @@ def choose_games(
                 "chosen_identifiers[]": display_name,
                 "is_multikey_and_from_choice_modal": "false",
             }
-            res = humble_session.post(
-                HUMBLE_CHOOSE_CONTENT, data=payload, headers=HUMBLE_HEADERS
-            ).json()
+            try:
+                res = humble_session.post(
+                    HUMBLE_CHOOSE_CONTENT, data=payload, headers=HUMBLE_HEADERS
+                ).json()
+            except Exception as e:
+                print_error(f"Error choosing {escape(choice['title'])}: {e}")
+                print(
+                    f"choose_games exception for {choice['title']!r}: {e!r}",
+                    file=sys.stderr,
+                )
+                failed.append(choice["title"])
+                continue
             if "success" not in res or not res["success"]:
                 print_error(f"Error choosing {escape(choice['title'])}")
                 console.print(res)
+                print(
+                    f"choose_games failure for {choice['title']!r}: {res!r}",
+                    file=sys.stderr,
+                )
+                failed.append(choice["title"])
             else:
                 print_success(f"Chose game {escape(choice['title'])}")
+    return failed
 
 
 def humble_chooser_mode(
@@ -188,9 +205,18 @@ def humble_chooser_mode(
             if prompt_yes_no("Confirm selection?"):
                 choice_month_name = month["product"]["choice_url"]
                 identifier = month["parent_identifier"]
-                choose_games(
+                failed = choose_games(
                     humble_session, choice_month_name, identifier, chosen
                 )
+                if failed:
+                    print_error(
+                        f"{len(failed)} pick(s) failed — see above and error.log"
+                    )
+                    Prompt.ask(
+                        "[dim]Press Enter to continue[/dim]", default=""
+                    )
+                    # Stay on this month so the user can retry
+                    continue
                 if redeem_keys:
                     try_redeem_keys.append(month["gamekey"])
                 ready = True
