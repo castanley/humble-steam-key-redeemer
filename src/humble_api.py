@@ -168,8 +168,8 @@ def get_choices(
     months = [
         month
         for month in order_details
-        if "is_humble_choice" in month["product"]
-        and month["product"]["is_humble_choice"]
+        if month["product"].get("category") == "subscriptioncontent"
+        and "choice_url" in month["product"]
     ]
 
     months = sorted(months, key=lambda m: m["created"])
