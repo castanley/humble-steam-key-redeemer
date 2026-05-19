@@ -168,6 +168,7 @@ def humble_chooser_mode(
                 )
                 if redeem_keys:
                     try_redeem_keys.append(month["gamekey"])
+                ready = True
             else:
                 invalid_option = lambda option: (
                     not option.isnumeric()
