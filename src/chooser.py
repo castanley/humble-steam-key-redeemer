@@ -114,13 +114,17 @@ def humble_chooser_mode(
         ready = False
         while not ready:
             cls()
-            remaining = month["choices_remaining"]
             choices = month["available_choices"]
+            if month.get("uses_choices", True):
+                remaining = month["choices_remaining"]
+                label = f"[cyan]{remaining}[/cyan] choices remaining"
+            else:
+                # v3 unlock-all months: every available game can be claimed.
+                remaining = len(choices)
+                label = f"[cyan]{remaining}[/cyan] games to claim"
 
             month_name = escape(month["product"]["human_name"])
-            print_rule(
-                f"{month_name}  ·  [cyan]{remaining}[/cyan] choices remaining"
-            )
+            print_rule(f"{month_name}  ·  {label}")
 
             if redeem_all is None and remaining == len(choices):
                 redeem_all = prompt_yes_no("Redeem all?")
