@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-__version__ = "2026.02.20"
+__version__ = "2026.08.17"
 APP_NAME = "eNkrypt's Steam Redeemer"
 
 # Project root — works both from source and as a PyInstaller binary
