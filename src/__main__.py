@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from concurrent.futures import as_completed
 
 import cloudscraper
@@ -19,6 +20,7 @@ from src.utils import (
     print_info,
     print_rule,
     print_success,
+    print_warning,
     prompt_menu,
 )
 
@@ -53,6 +55,55 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _fetch_order_details(
+    humble_session,
+    orders: list[dict],
+    *,
+    max_workers: int = 15,
+    retries: int = 3,
+) -> tuple[list[dict], list[str]]:
+    """Fetch every order's details, retrying transient failures.
+
+    A single dropped TLS connection (e.g. ``[SSL: UNEXPECTED_EOF_WHILE_READING]``)
+    among the concurrent requests used to crash the whole run (issue #7). Now
+    failed orders are collected and retried sequentially with backoff, and any
+    that still fail are returned to the caller rather than raising.
+    """
+
+    def url(gamekey: str) -> str:
+        return f"{HUMBLE_ORDER_DETAILS_API}{gamekey}?all_tpkds=true"
+
+    order_details: list[dict] = []
+
+    # First pass: concurrent fetch.
+    with FuturesSession(session=humble_session, max_workers=max_workers) as retriever:
+        futures = {
+            retriever.get(url(order["gamekey"])): order["gamekey"] for order in orders
+        }
+        pending: list[str] = []
+        for future in as_completed(futures):
+            gamekey = futures[future]
+            try:
+                order_details.append(future.result().json())
+            except Exception:
+                pending.append(gamekey)
+
+    # Sequential retries with backoff for transient TLS / Cloudflare hiccups.
+    for attempt in range(retries):
+        if not pending:
+            break
+        time.sleep(2 * (attempt + 1))
+        still_failing: list[str] = []
+        for gamekey in pending:
+            try:
+                order_details.append(humble_session.get(url(gamekey)).json())
+            except Exception:
+                still_failing.append(gamekey)
+        pending = still_failing
+
+    return order_details, pending
+
+
 def main(argv: list[str] | None = None) -> None:
     """Main orchestration: Humble login -> fetch orders -> mode selection -> dispatch."""
     from src.humble_api import humble_login
@@ -69,22 +120,18 @@ def main(argv: list[str] | None = None) -> None:
 
     orders = humble_session.get(HUMBLE_ORDERS_API).json()
 
-    order_details: list[dict] = []
     with console.status(
         f"Fetching [bold]{len(orders)}[/bold] order details…", spinner="dots"
     ):
-        with FuturesSession(session=humble_session, max_workers=30) as retriever:
-            order_futures = [
-                retriever.get(
-                    f"{HUMBLE_ORDER_DETAILS_API}{order['gamekey']}?all_tpkds=true"
-                )
-                for order in orders
-            ]
-            for future in as_completed(order_futures):
-                resp = future.result()
-                order_details.append(resp.json())
+        order_details, failed = _fetch_order_details(humble_session, orders)
 
     print_success(f"Fetched {len(order_details)} orders from Humble.")
+    if failed:
+        print_warning(
+            f"Couldn't fetch {len(failed)} of {len(orders)} orders after retries "
+            f"(likely a transient Humble/Cloudflare hiccup) — continuing without "
+            f"them. Re-run to pick them up."
+        )
 
     if not args.auto:
         desired_mode = prompt_mode()
