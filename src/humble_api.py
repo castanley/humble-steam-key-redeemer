@@ -157,6 +157,12 @@ def get_month_data(humble_session, month: dict) -> dict:
     r = humble_session.get(HUMBLE_SUB_PAGE + month["product"]["choice_url"])
 
     data_indicator = '<script id="webpack-monthly-product-data" type="application/json">'
+    if data_indicator not in r.text:
+        raise RuntimeError(
+            f"Couldn't find product data for "
+            f"{month['product'].get('choice_url')!r} (HTTP {r.status_code}); "
+            f"Humble may have redirected to login or changed the page layout."
+        )
     json_text = r.text.split(data_indicator)[1].split("</script>")[0].strip()
     return json.loads(json_text)["contentChoiceOptions"]
 
@@ -164,7 +170,14 @@ def get_month_data(humble_session, month: dict) -> dict:
 def get_choices(
     humble_session, order_details: list[dict]
 ) -> Generator[dict, None, None]:
-    """Yield Humble Choice months that still have unchosen games."""
+    """Yield Humble Choice months that still have unchosen games.
+
+    Handles both the classic "choose N of X" months (subs v2) and the newer
+    "unlock everything" months (subs v3). v3 months report
+    ``choices_remaining == 0`` and expose their games under
+    ``contentChoiceData["game_data"]`` rather than ``content_choices``, so they
+    are gated and parsed separately below.
+    """
     months = [
         month
         for month in order_details
@@ -172,34 +185,54 @@ def get_choices(
         and "choice_url" in month["product"]
     ]
 
-    months = sorted(months, key=lambda m: m["created"])
+    months = sorted(months, key=lambda m: m.get("created", ""))
 
     for month in months:
-        if month["choices_remaining"] > 0:
-            chosen_games = set(find_dict_keys(month["tpkd_dict"], "machine_name"))
+        is_v3 = month["product"].get("is_subs_v3_product", False)
 
-            month["choice_data"] = get_month_data(humble_session, month)
+        # v3 unlock-all months don't advertise a choice count but still have
+        # claimable games, so surface them explicitly alongside classic months.
+        if not (month.get("choices_remaining", 0) > 0 or is_v3):
+            continue
 
+        chosen_games = set(find_dict_keys(month.get("tpkd_dict", {}), "machine_name"))
+
+        month["choice_data"] = get_month_data(humble_session, month)
+
+        # Some months (fully region-locked, expired, etc.) can't be redeemed.
+        if not month["choice_data"].get("canRedeemGames", True):
+            continue
+
+        content_choice_data = month["choice_data"]["contentChoiceData"]
+        uses_choices = month["choice_data"].get("usesChoices", True)
+
+        if not uses_choices:
+            # v3: every game lives under game_data and the whole set is claimable.
+            identifier = "initial"
+            choice_options = content_choice_data.get("game_data", {})
+        else:
             identifier = (
                 "initial"
-                if "initial" in month["choice_data"]["contentChoiceData"]
+                if "initial" in content_choice_data
                 else "initial-classic"
             )
 
-            if identifier not in month["choice_data"]["contentChoiceData"]:
-                for key in month["choice_data"]["contentChoiceData"]:
-                    if "content_choices" in month["choice_data"]["contentChoiceData"][key]:
+            if identifier not in content_choice_data:
+                for key in content_choice_data:
+                    if "content_choices" in content_choice_data[key]:
                         identifier = key
 
-            choice_options = month["choice_data"]["contentChoiceData"][identifier][
-                "content_choices"
-            ]
+            choice_options = content_choice_data[identifier]["content_choices"]
 
-            month["available_choices"] = [
-                game[1]
-                for game in choice_options.items()
-                if set(find_dict_keys(game[1], "machine_name")).isdisjoint(chosen_games)
-            ]
+        month["available_choices"] = [
+            game[1]
+            for game in choice_options.items()
+            if set(find_dict_keys(game[1], "machine_name")).isdisjoint(chosen_games)
+        ]
 
-            month["parent_identifier"] = identifier
+        month["uses_choices"] = uses_choices
+        month["parent_identifier"] = identifier
+
+        # Skip months with nothing left to claim (fully-chosen v2 or v3).
+        if month["available_choices"]:
             yield month
