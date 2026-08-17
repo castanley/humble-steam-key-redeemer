@@ -8,20 +8,25 @@ crypto_datas, crypto_binaries, crypto_hiddenimports = collect_all('cryptography'
 # cloudscraper dynamically loads interpreters at runtime
 cs_datas, cs_binaries, cs_hiddenimports = collect_all('cloudscraper')
 
+# rich dynamically imports rich._unicode_data.unicode<ver> at runtime, which
+# PyInstaller's static analysis can't see — collect it explicitly (see issue #8)
+rich_datas, rich_binaries, rich_hiddenimports = collect_all('rich')
+
 a = Analysis(
     ['src/__main__.py'],
     pathex=[],
-    binaries=crypto_binaries + cs_binaries,
-    datas=crypto_datas + cs_datas,
+    binaries=crypto_binaries + cs_binaries + rich_binaries,
+    datas=crypto_datas + cs_datas + rich_datas,
     hiddenimports=[
         *crypto_hiddenimports,
         *cs_hiddenimports,
+        *rich_hiddenimports,
         *collect_submodules('cryptography'),
         *collect_submodules('cloudscraper'),
+        *collect_submodules('rich'),
         'fuzzywuzzy',
         'Levenshtein',
         'requests_futures',
-        'rich',
         'qrcode',
     ],
     hookspath=[],
