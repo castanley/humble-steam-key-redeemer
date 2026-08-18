@@ -50,14 +50,6 @@ If you skip the QR code and use credentials with 2FA enabled, the tool shows a c
 
 ## Setup
 
-### Using [uv](https://docs.astral.sh/uv/) (uv is a modern python package manager, this command will start running in TUI mode)
-
-```bash
-uv run humble-steam-redeem
-```
-
-### Using pip
-
 ```bash
 pip install -r requirements.txt
 ```
