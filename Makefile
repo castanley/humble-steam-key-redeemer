@@ -5,7 +5,7 @@ help:
 	@echo "  make run     - Run the humble-steam-redeem script"
 	@echo "  make install - Install dependencies with uv"
 	@echo "  make sync    - Sync lock file with pyproject.toml"
-	@echo "  make test    - Run smoke tests"
+	@echo "  make test    - Run smoke + filter-logic tests"
 	@echo "  make clean   - Remove generated files and cache"
 
 run:
@@ -19,6 +19,7 @@ sync:
 
 test:
 	uv run python smoke_test.py
+	uv run python test_filter_logic.py
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
