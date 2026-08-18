@@ -122,19 +122,26 @@ Redeem new keys every 6 hours:
 
 The binaries are provided for convenience — you don't need them if you have Python installed. Just clone the repo, `pip install -r requirements.txt`, and run `python steam_redeem.py` directly.
 
-Pre-built Windows and Linux binaries are available on the [Releases](../../releases) page for those who don't want to install Python or manage dependencies.
+Pre-built Windows, macOS, and Linux binaries are available on the [Releases](../../releases) page for those who don't want to install Python or manage dependencies.
 
 ### Windows
 
-1. Download `steam-redeemer.exe` from the latest release
+1. Download `steam-redeemer-windows.exe` from the latest release
 2. Put it in its own folder (it creates `config.yaml` and `.state/` next to itself)
 3. Double-click or run from Command Prompt / PowerShell
 4. Windows SmartScreen may warn "Windows protected your PC" since the binary isn't signed — click **More info** then **Run anyway**
 
+### macOS
+
+1. Download `steam-redeemer-macos` from the latest release (Apple Silicon / arm64)
+2. `chmod +x steam-redeemer-macos && ./steam-redeemer-macos`
+3. macOS Gatekeeper blocks unsigned binaries — either right-click the file and choose **Open**, or clear the quarantine flag first: `xattr -d com.apple.quarantine steam-redeemer-macos`
+
 ### Linux
 
-1. Download `steam-redeemer` from the latest release
-2. `chmod +x steam-redeemer && ./steam-redeemer`
+1. Download `steam-redeemer-linux` from the latest release
+2. `chmod +x steam-redeemer-linux && ./steam-redeemer-linux`
+3. Built on `ubuntu-latest` (glibc 2.38+). On older distros (e.g. RHEL/Rocky 9), run from source instead.
 
 ### Build from source
 
