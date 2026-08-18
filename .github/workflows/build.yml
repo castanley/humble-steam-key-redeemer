@@ -11,14 +11,21 @@ permissions:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
             artifact: steam-redeemer-linux
             binary: steam-redeemer
+            asset: steam-redeemer-linux
+          - os: macos-latest
+            artifact: steam-redeemer-macos
+            binary: steam-redeemer
+            asset: steam-redeemer-macos
           - os: windows-latest
             artifact: steam-redeemer-windows
             binary: steam-redeemer.exe
+            asset: steam-redeemer-windows.exe
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -57,11 +64,15 @@ jobs:
           dist/smoke-test${{ matrix.os == 'windows-latest' && '.exe' || '' }}
         shell: bash
 
+      - name: Stage release asset
+        run: cp "dist/${{ matrix.binary }}" "dist/${{ matrix.asset }}"
+        shell: bash
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: dist/${{ matrix.binary }}
+          path: dist/${{ matrix.asset }}
 
   release:
     needs: build
@@ -78,6 +89,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/steam-redeemer-linux/steam-redeemer
-            artifacts/steam-redeemer-windows/steam-redeemer.exe
+            artifacts/steam-redeemer-linux/steam-redeemer-linux
+            artifacts/steam-redeemer-macos/steam-redeemer-macos
+            artifacts/steam-redeemer-windows/steam-redeemer-windows.exe
           generate_release_notes: true
