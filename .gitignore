@@ -5,7 +5,6 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-uv.lock
 
 # State & secrets
 .state/
