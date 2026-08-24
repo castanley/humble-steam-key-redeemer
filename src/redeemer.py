@@ -13,7 +13,12 @@ from rich.panel import Panel
 from rich.text import Text
 
 from src.humble_api import redeem_humble_key
-from src.ownership import get_owned_apps, match_ownership
+from src.ownership import (
+    DEFAULT_FILTER_THRESHOLD,
+    DEFAULT_MATCH_THRESHOLD,
+    get_owned_apps,
+    match_ownership,
+)
 from src.steam_auth import STEAM_REDEEM_API, steam_login
 from src.utils import (
     console,
@@ -165,8 +170,16 @@ def redeem_steam_keys(
     *,
     auto: bool = False,
     reveal_all: bool = False,
+    ownership_threshold: int | None = None,
 ) -> None:
     """Full auto-redeem pipeline: Steam login, ownership check, redeem with rate-limit handling."""
+    filter_threshold = (
+        DEFAULT_FILTER_THRESHOLD if ownership_threshold is None else ownership_threshold
+    )
+    match_threshold = (
+        DEFAULT_MATCH_THRESHOLD if ownership_threshold is None else ownership_threshold
+    )
+
     session = steam_login(auto=auto)
 
     print_success("Successfully signed in on Steam.")
@@ -186,7 +199,12 @@ def redeem_steam_keys(
             unowned_games: list[dict] = []
 
             for game in noted_keys:
-                best_match = match_ownership(owned_app_details, game)
+                best_match = match_ownership(
+                    owned_app_details,
+                    game,
+                    filter_threshold=filter_threshold,
+                    match_threshold=match_threshold,
+                )
                 if best_match[1] is not None and best_match[1] in owned_app_details:
                     skipped_games[game["human_name"].strip()] = game
                 else:

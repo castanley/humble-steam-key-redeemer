@@ -118,11 +118,27 @@ def get_owned_apps(steam_session, *, auto: bool = False) -> dict[int, str]:
     }
 
 
+# Historical defaults. token_set_ratio is looser than token_sort_ratio, so the
+# filter pass and the final acceptance check have always used different cutoffs.
+DEFAULT_FILTER_THRESHOLD = 70
+DEFAULT_MATCH_THRESHOLD = 35
+
+
 def match_ownership(
-    owned_app_details: dict[int, str], game: dict[str, Any]
+    owned_app_details: dict[int, str],
+    game: dict[str, Any],
+    filter_threshold: int = DEFAULT_FILTER_THRESHOLD,
+    match_threshold: int = DEFAULT_MATCH_THRESHOLD,
 ) -> tuple[int, int | None]:
-    """Fuzzy-match *game* against owned apps. Returns (score, appid) or (0, None)."""
-    threshold = 70
+    """Fuzzy-match *game* against owned apps. Returns (score, appid) or (0, None).
+
+    *filter_threshold* gates the initial token_set_ratio pass; *match_threshold*
+    is the minimum token_sort_ratio score required to accept the best remaining
+    candidate. The defaults can let loosely-related titles match (e.g. 'Spirit'
+    matching 'The Spirit Lift', 'Book of Demons' matching 'Book of Hours').
+    Passing the same, higher value for both (e.g. 85) makes matching stricter
+    at the cost of missing some legitimate DLC/edition variants.
+    """
     matches = [
         (fuzz.token_set_ratio(appname, game["human_name"]), appid)
         for appid, appname in owned_app_details.items()
@@ -130,12 +146,12 @@ def match_ownership(
     refined_matches = [
         (fuzz.token_sort_ratio(owned_app_details[appid], game["human_name"]), appid)
         for score, appid in matches
-        if score > threshold
+        if score > filter_threshold
     ]
     if refined_matches:
         best_match = max(refined_matches, key=lambda item: item[0])
     else:
         best_match = (0, None)
-    if best_match[0] < 35:
+    if best_match[0] < match_threshold:
         best_match = (0, None)
     return best_match

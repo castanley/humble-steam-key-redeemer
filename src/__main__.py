@@ -13,6 +13,7 @@ from requests_futures.sessions import FuturesSession
 from src.chooser import humble_chooser_mode
 from src.export import export_mode
 from src.humble_api import HUMBLE_ORDER_DETAILS_API, HUMBLE_ORDERS_API
+from src.ownership import DEFAULT_FILTER_THRESHOLD, DEFAULT_MATCH_THRESHOLD
 from src.redeemer import redeem_steam_keys
 from src.utils import (
     console,
@@ -51,6 +52,18 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="With --auto: reveal and redeem unrevealed keys even without "
         "ownership data. Default is to skip unrevealed keys to preserve gift links.",
+    )
+    parser.add_argument(
+        "--ownership-threshold",
+        type=int,
+        default=None,
+        metavar="0-100",
+        help="Override both fuzzy-match thresholds used for ownership "
+        f"detection (defaults: filter={DEFAULT_FILTER_THRESHOLD}, "
+        f"match={DEFAULT_MATCH_THRESHOLD}) with a single stricter value, e.g. "
+        "85. The defaults can let loosely-related titles match (e.g. "
+        "'Spirit' matching 'The Spirit Lift'); raise this if genuinely "
+        "unowned games are being skipped as already-owned.",
     )
     return parser.parse_args(argv)
 
@@ -175,7 +188,11 @@ def main(argv: list[str] | None = None) -> None:
     console.print()
 
     redeem_steam_keys(
-        humble_session, steam_keys, auto=args.auto, reveal_all=args.reveal_all
+        humble_session,
+        steam_keys,
+        auto=args.auto,
+        reveal_all=args.reveal_all,
+        ownership_threshold=args.ownership_threshold,
     )
 
 
